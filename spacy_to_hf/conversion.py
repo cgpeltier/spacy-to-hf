@@ -2,7 +2,7 @@ from typing import Collection, Dict, List, Sequence, Union
 
 import spacy
 from datasets import Dataset
-from spacy.gold import biluo_tags_from_offsets
+from spacy.training import offsets_to_biluo_tags
 from tokenizations import get_alignments
 from transformers import AutoTokenizer
 
@@ -68,7 +68,7 @@ def spacy_to_hf(
         sorted(row.keys()) == ["spans", "text"] for row in spacy_data
     ), "All rows must have 2 keys, 'spans', and 'text'"
     tok = AutoTokenizer.from_pretrained(tokenizer)
-    nlp = spacy.load("en_core_web_sm")
+    nlp = spacy.blank("en")
     hf_data: Dict[str, List] = {"tokens": [], "ner_tags": []}
     for row in spacy_data:
         spans = row["spans"]
@@ -81,7 +81,7 @@ def spacy_to_hf(
         doc = nlp(text)
         spacy_tokens = [token.text for token in doc]
         entities = [(span["start"], span["end"], span["label"]) for span in spans]
-        spacy_tags = biluo_tags_from_offsets(doc, entities)
+        spacy_tags = offsets_to_biluo_tags(doc, entities)
         hf_tokens = tok.tokenize(text)
         _, hf_to_spacy = get_alignments(spacy_tokens, hf_tokens)
         hf_tags = map_spacy_to_hf_tags(hf_to_spacy, spacy_tags)
